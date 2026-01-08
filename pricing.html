@@ -812,7 +812,110 @@
         </div>
     </footer>
 
+    <!-- Stripe JS -->
+    <script src="https://js.stripe.com/v3/"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="scripts/config.js"></script>
+    <script src="scripts/auth.js"></script>
     <script src="scripts/main.js"></script>
+    <script>
+        // Initialize Stripe
+        const stripe = Stripe(CONFIG.STRIPE_PUBLISHABLE_KEY);
+        
+        // Track billing period
+        let isYearly = false;
+        
+        // Update billing toggle
+        const billingToggle = document.getElementById('billing-toggle-page');
+        if (billingToggle) {
+            billingToggle.addEventListener('change', (e) => {
+                isYearly = e.target.checked;
+                document.getElementById('monthly-label').classList.toggle('active', !isYearly);
+                document.getElementById('yearly-label').classList.toggle('active', isYearly);
+                
+                // Update prices
+                document.querySelectorAll('.price-amount').forEach(el => {
+                    const monthly = el.dataset.monthly;
+                    const yearly = el.dataset.yearly;
+                    el.textContent = isYearly ? yearly : monthly;
+                });
+            });
+        }
+
+        // Handle Pro subscription
+        document.getElementById('start-pro-trial').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await startCheckout('pro');
+        });
+
+        // Handle Elite subscription
+        document.getElementById('start-elite-trial').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await startCheckout('elite');
+        });
+
+        // Start Stripe Checkout
+        async function startCheckout(plan) {
+            // Check if user is logged in
+            const user = await Auth.getCurrentUser();
+            
+            if (!user) {
+                // Redirect to signup with return URL
+                window.location.href = `/signup.html?redirect=${encodeURIComponent(window.location.pathname)}&plan=${plan}`;
+                return;
+            }
+
+            // Determine price ID
+            const priceId = isYearly ? `${plan}_yearly` : `${plan}_monthly`;
+
+            try {
+                // Show loading state
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Loading...';
+                btn.disabled = true;
+
+                // Create checkout session
+                const response = await fetch('/api/create-checkout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        priceId,
+                        userId: user.id,
+                        userEmail: user.email,
+                    }),
+                });
+
+                const { url, error } = await response.json();
+
+                if (error) {
+                    throw new Error(error);
+                }
+
+                // Redirect to Stripe Checkout
+                window.location.href = url;
+            } catch (error) {
+                console.error('Checkout error:', error);
+                alert('Error starting checkout. Please try again.');
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // Check for success/canceled URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('success') === 'true') {
+            alert('🎉 Subscription activated! Welcome to SportsEdgeBet Pro!');
+            window.history.replaceState({}, '', '/pricing.html');
+        }
+        if (urlParams.get('canceled') === 'true') {
+            // User canceled checkout - no action needed
+            window.history.replaceState({}, '', '/pricing.html');
+        }
+    </script>
 </body>
 </html>
 
