@@ -4,7 +4,7 @@
 -- =============================================
 
 -- =============================================
--- CS2 TEAMS TABLE
+-- CS2 TEAMS TABLE 
 -- =============================================
 CREATE TABLE public.cs2_teams (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
