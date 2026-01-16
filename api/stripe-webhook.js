@@ -236,3 +236,4 @@ function getPlanFromPriceId(priceId) {
     return priceMap[priceId] || 'free';
 }
 
+

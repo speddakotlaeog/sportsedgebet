@@ -1,0 +1,102 @@
+name: CS2 Data Pipeline
+
+on:
+  # Run every 30 minutes during peak hours (10am-2am UTC, covers major tournaments)
+  schedule:
+    - cron: '*/30 10-23 * * *'  # Every 30 min, 10am-11pm UTC
+    - cron: '*/30 0-2 * * *'    # Every 30 min, midnight-2am UTC
+    - cron: '0 6 * * *'         # Daily full sync at 6am UTC
+  
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      full_sync:
+        description: 'Run full historical sync'
+        required: false
+        default: 'false'
+        type: boolean
+      source:
+        description: 'Data source to sync'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - pandascore
+          - abios
+          - odds
+
+jobs:
+  sync-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'data_pipeline/requirements.txt'
+      
+      - name: Install dependencies
+        run: |
+          cd data_pipeline
+          pip install -r requirements.txt
+      
+      - name: Run data pipeline
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          PANDASCORE_API_KEY: ${{ secrets.PANDASCORE_API_KEY }}
+          ABIOS_CLIENT_ID: ${{ secrets.ABIOS_CLIENT_ID }}
+          ABIOS_CLIENT_SECRET: ${{ secrets.ABIOS_CLIENT_SECRET }}
+          ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
+        run: |
+          cd data_pipeline
+          # Determine if full sync (scheduled at 6am or manual)
+          if [[ "${{ github.event.schedule }}" == "0 6 * * *" ]] || [[ "${{ inputs.full_sync }}" == "true" ]]; then
+            echo "Running full sync..."
+            python main.py --full-sync --source ${{ inputs.source || 'all' }}
+          else
+            echo "Running regular sync..."
+            python main.py --source ${{ inputs.source || 'all' }}
+          fi
+
+  # Weekly ML model retraining (Sundays at 5am UTC)
+  retrain-models:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 5 * * 0'  # Only on Sundays
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'data_pipeline/requirements.txt'
+      
+      - name: Install dependencies
+        run: |
+          cd data_pipeline
+          pip install -r requirements.txt
+      
+      - name: Retrain ML models
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          cd data_pipeline
+          python ml/train.py --save-model
+      
+      - name: Upload model artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ml-models
+          path: data_pipeline/ml/models/
+          retention-days: 30

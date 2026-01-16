@@ -262,3 +262,4 @@ CREATE TRIGGER update_affiliates_updated_at
     BEFORE UPDATE ON public.affiliates
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+

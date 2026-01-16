@@ -247,3 +247,4 @@ All tables have RLS enabled:
    - Add caching with Upstash Redis
    - Consider edge functions for global performance
 
+
