@@ -5,8 +5,8 @@
 const CONFIG = {
     // Supabase Configuration
     // Get these from: https://supabase.com/dashboard/project/YOUR_PROJECT/settings/api
-    SUPABASE_URL: 'YOUR_SUPABASE_URL', // e.g., 'https://xxxxx.supabase.co'
-    SUPABASE_ANON_KEY: 'YOUR_SUPABASE_ANON_KEY',
+    SUPABASE_URL: 'https://oecotvkdpgpmcgfcfjap.supabase.co', // e.g., 'https://oecotvkdpgpmcgfcfjap.supabase.co'
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lY290dmtkcGdwbWNnZmNmamFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTgyNzEsImV4cCI6MjA4MzI5NDI3MX0.glPXyCdiiEx7_KaCojAtnM9rlGj03IIj2AGirF6tAy8',
     
     // Stripe Configuration  
     // Get these from: https://dashboard.stripe.com/apikeys
